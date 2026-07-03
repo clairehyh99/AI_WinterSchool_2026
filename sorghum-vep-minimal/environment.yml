@@ -1,0 +1,8 @@
+name: sorghum-vep
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - ensembl-vep=112
+  - htslib
