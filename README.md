@@ -5,9 +5,11 @@ Using DNA foundation models to inform SNP selection for genomic prediction tasks
 
 ## Workshop Files
 
-- `panicle_length_genomatrix_snps.vcf`: A sorghum genotype matrix of 1000 SNPs across 527 accessions. SNPs match Chr9_random1000 SNPs.
-- `pheno_PL_filtered.tsv`: Phenotype data for panicle length in sorghum across 527 accessions.
-- `DS24-Chr9_random1000_maf05.tsv`: 1000 randomly selected SNPs from *Sorghum bicolor* chromosome 9.
+- `data/panicle_length_genomatrix_snps.vcf`: A sorghum genotype matrix of 1000 SNPs across 527 accessions. SNPs match Chr9_random1000 SNPs.
+- `data/pheno_PL_filtered.tsv`: Phenotype data for panicle length in sorghum across 527 accessions.
+- `data/DS24-Chr9_random1000_maf05.tsv`: 1000 randomly selected SNPs from *Sorghum bicolor* chromosome 9.
+- `data/sap_flowering.pheno`: Tab-separated values file containing phenotype data ("days to flowering") for the Sorghum Association Panel (SAP) population (Chromosome 1).
+- `data/snp_matrix_1000.csv.gz`: Compressed CSV file containing a genotype matrix of 1,000 randomly selected SNPs from Chromosome 1. The accessions in this matrix correspond to those in `sap_flowering.pheno`.
 
 ---
 

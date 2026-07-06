@@ -8,6 +8,8 @@ import subprocess
 
 # Target configurations
 FASTA_URL = "https://github.com/scicrow/AI_WinterSchool_2026/raw/main/Sbicolor_454_v3.0.1_Chr09.fa.gz"
+FALLBACK_FASTA_URL = "https://ftp.ensemblgenomes.ebi.ac.uk/pub/plants/release-59/fasta/sorghum_bicolor/dna/Sorghum_bicolor.Sorghum_bicolor_NCBIv3.dna.chromosome.9.fa.gz"
+
 GFF3_URL = "https://ftp.ensemblgenomes.ebi.ac.uk/pub/plants/release-59/gff3/sorghum_bicolor/Sorghum_bicolor.Sorghum_bicolor_NCBIv3.59.gff3.gz"
 
 FASTA_OUT_GZ = "sorghum_Chr09.fa.gz"
@@ -16,15 +18,12 @@ GFF3_OUT_FULL = "sorghum_full.gff3.gz"
 GFF3_OUT_CHR09 = "sorghum_Chr09.gff3"
 
 def find_binary(name):
-    # Try current PATH first
     path = shutil.which(name)
     if path:
         return path
-    # Try standard Colab VEP environment paths
     colab_path = f"/content/vep_env/bin/{name}"
     if os.path.exists(colab_path):
         return colab_path
-    # Try active conda env path
     conda_prefix = os.environ.get("CONDA_PREFIX")
     if conda_prefix:
         env_path = os.path.join(conda_prefix, "bin", name)
@@ -34,7 +33,6 @@ def find_binary(name):
 
 def download_file(url, dest):
     print(f"Downloading {url} to {dest}...")
-    # Add User-Agent headers to avoid getting blocked by FTP/HTTP gateways
     req = urllib.request.Request(
         url, 
         headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
@@ -52,9 +50,44 @@ def decompress_gz(src, dest):
 def prepare_fasta():
     if not os.path.exists(FASTA_OUT):
         if not os.path.exists(FASTA_OUT_GZ):
-            download_file(FASTA_URL, FASTA_OUT_GZ)
+            # Check local data folder first
+            local_srcs = [
+                "../data/Sbicolor_454_v3.0.1_Chr09.fa.gz",
+                "../data/Sorghum_bicolor.Sorghum_bicolor_NCBIv3.dna.chromosome.9.fa.gz"
+            ]
+            found_local = False
+            for local_src in local_srcs:
+                if os.path.exists(local_src):
+                    print(f"Found local FASTA source at {local_src}. Copying...")
+                    shutil.copy(local_src, FASTA_OUT_GZ)
+                    found_local = True
+                    break
+            
+            if not found_local:
+                try:
+                    download_file(FASTA_URL, FASTA_OUT_GZ)
+                except Exception as e:
+                    print(f"Primary download failed: {e}. Trying fallback Ensembl URL...")
+                    download_file(FALLBACK_FASTA_URL, FASTA_OUT_GZ)
+                
         decompress_gz(FASTA_OUT_GZ, FASTA_OUT)
-    
+        
+        # Standardize header (if from Ensembl, change >9 to >Chr09)
+        with open(FASTA_OUT, 'r') as f:
+            first_line = f.readline()
+        
+        if first_line.strip() == ">9":
+            print("Standardizing FASTA header for Chr09...")
+            with open(FASTA_OUT, 'r') as f:
+                content = f.read()
+            content = content.replace(first_line, ">Chr09\n", 1)
+            with open(FASTA_OUT, 'w') as f:
+                f.write(content)
+                
+        # Clean up compressed FASTA to save space
+        if os.path.exists(FASTA_OUT_GZ):
+            os.remove(FASTA_OUT_GZ)
+            
     # Index the FASTA
     print("Indexing FASTA using pysam...")
     try:
@@ -100,7 +133,7 @@ def prepare_gff():
         print(f"Indexing GFF3 with tabix (using {tabix_bin})...")
         subprocess.run([tabix_bin, "-p", "gff", GFF3_OUT_CHR09 + ".gz"], check=True)
         
-        # Clean up intermediate uncompressed file if it still exists
+        # Clean up intermediate uncompressed file
         if os.path.exists(GFF3_OUT_CHR09):
             os.remove(GFF3_OUT_CHR09)
         print("GFF3 preparation complete.")

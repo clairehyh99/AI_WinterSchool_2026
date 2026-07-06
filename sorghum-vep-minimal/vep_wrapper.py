@@ -23,8 +23,8 @@ def find_binary(name):
 
 def write_snps_to_vcf(snp_list, vcf_path, chrom="Chr09"):
     """
-    Converts a list of dicts (with 'pos', 'ref', 'alt', and optional 'id') or a pandas DataFrame
-    into a standard VCF file for VEP.
+    Converts a list of dicts (with 'pos', 'ref', 'alt', and optional 'id', 'chrom') 
+    or a pandas DataFrame into a standard VCF file for VEP.
     """
     import pandas as pd
     if isinstance(snp_list, pd.DataFrame):
@@ -40,12 +40,14 @@ def write_snps_to_vcf(snp_list, vcf_path, chrom="Chr09"):
             pos = row['pos']
             ref = row['ref']
             alt = row['alt']
-            f.write(f"{chrom}\t{pos}\t{variant_id}\t{ref}\t{alt}\t.\t.\t.\n")
+            # Get chrom from row first, fallback to the default argument
+            row_chrom = row.get('chrom', row.get('CHROM', chrom))
+            f.write(f"{row_chrom}\t{pos}\t{variant_id}\t{ref}\t{alt}\t.\t.\t.\n")
     print(f"Wrote {len(rows)} variants to VCF file: {vcf_path}")
 
 def run_vep(vcf_in, txt_out, extra_args=None):
     """
-    Runs Ensembl VEP offline using the local Sorghum Chr09 FASTA and GFF3 files.
+    Runs Ensembl VEP offline using the local Sorghum Chr09 reference files.
     """
     vep_bin = find_binary("vep")
     gff_file = "sorghum_Chr09.gff3.gz"
